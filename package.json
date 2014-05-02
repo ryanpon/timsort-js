@@ -1,0 +1,24 @@
+{
+  "name": "timsort",
+  "version": "0.0.0",
+  "description": "Timsort for Javascript",
+  "main": "timsort.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/ryanpon/timsort-js.git"
+  },
+  "keywords": [
+    "sort",
+    "sorting",
+    "timsort"
+  ],
+  "author": "Ryan Pon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ryanpon/timsort-js/issues"
+  },
+  "homepage": "https://github.com/ryanpon/timsort-js"
+}
