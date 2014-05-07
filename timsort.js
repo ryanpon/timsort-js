@@ -16,9 +16,6 @@ function binarysort(s, sorted, cmp) {
     var l = sBase,
         r = start,
         pivot = sList[r];
-    if (cmp(sList[r-1], pivot)) {
-      continue;
-    }
     while (l < r) {
       var p = l + (r - l >> 1);
       if (cmp(pivot, sList[p])) {
@@ -212,7 +209,7 @@ TimSort.prototype.mergeLo = function (a, b) {
   list[dest] = b.popleft();
   dest += 1;
   if (a.length === 1 || b.length === 0) {
-    return;
+    return this.finishMergeLo(a, b, dest);
   }
 
   while (true) {
@@ -220,26 +217,31 @@ TimSort.prototype.mergeLo = function (a, b) {
     var bCount = 0;
 
     var minGallop = this.minGallop;
-    while (bCount < minGallop && aCount < minGallop) {
+    var nextA = a.first(), nextB = b.first();
+    while (bCount !== minGallop && aCount !== minGallop) {
       // merge while keeping track of which side won
-      if (lt(b.first(), a.first())) {
-        list[dest++] = b.popleft();
+      if (lt(nextB, nextA)) {
+        list[dest++] = nextB;    // b.popleft
+        b.base++, b.length--;
         if (b.length === 0) {
           return this.finishMergeLo(a, b, dest);
         }
         bCount++;
         aCount = 0;
+        nextB = b.first();
       } else {
-        list[dest++] = a.popleft();
+        list[dest++] = nextA;    // a.popleft
+        a.base++, a.length--;
         if (a.length === 1) {
           return this.finishMergeLo(a, b, dest);
         }
         aCount++;
         bCount = 0;
+        nextA = a.first();
       }
     }
-    this.minGallop++;
 
+    this.minGallop++;
     while (true) {
       this.minGallop -= this.minGallop > 1;
       aCount = this.gallop(b.first(), a, 0, true);
@@ -290,7 +292,6 @@ TimSort.prototype.finishMergeLo = function (a, b, dest) {
 };
 
 TimSort.prototype.mergeHi = function (a, b) {
-  var p, nextA, nextB;
   var lt = this.lt;
   var dest = b.base + b.length;
   b = b.copy();
@@ -300,7 +301,7 @@ TimSort.prototype.mergeHi = function (a, b) {
   var list = this.list;
   list[dest] = a.popright();
   if (a.length === 0 || b.length === 1) {
-    return;
+    return this.finishMergeHi(a, b, dest);
   }
 
   while (true) {
@@ -308,9 +309,10 @@ TimSort.prototype.mergeHi = function (a, b) {
     var bCount = 0;
 
     var minGallop = this.minGallop;
-    while (aCount < minGallop && bCount < minGallop) {
-      nextA = a.last();
-      nextB = b.last();
+    var nextA = a.last();
+    var nextB = b.last();
+    while (aCount !== minGallop && bCount !== minGallop) {
+
       if (lt(nextB, nextA)) {
         list[--dest] = nextA;
         if (--a.length === 0) {
@@ -318,6 +320,7 @@ TimSort.prototype.mergeHi = function (a, b) {
         }
         aCount += 1;
         bCount = 0;
+        nextA = a.last();
       } else {
         list[--dest] = nextB;
         if (--b.length === 1) {
@@ -325,6 +328,7 @@ TimSort.prototype.mergeHi = function (a, b) {
         }
         bCount += 1;
         aCount = 0;
+        nextB = b.last();
       }
     }
 
@@ -332,11 +336,10 @@ TimSort.prototype.mergeHi = function (a, b) {
     while (true) {
       this.minGallop -= this.minGallop > 1;
 
-      nextB = b.last();
-      var k = this.gallop(nextB, a, a.length - 1, true);
+      var k = this.gallop(b.last(), a, a.length - 1, true);
       aCount = a.length - k;
 
-      for (p = a.base + a.length - 1; p !== a.base + k - 1; p--) {
+      for (var p = a.base + a.length - 1; p !== a.base + k - 1; p--) {
         dest--;
         list[dest] = aList[p];
       }
@@ -348,8 +351,7 @@ TimSort.prototype.mergeHi = function (a, b) {
       list[dest] = b.popright();
       if (b.length === 1) { return this.finishMergeHi(a, b, dest); }
 
-      nextA = a.last();
-      k = this.gallop(nextA, b, b.length - 1, false);
+      k = this.gallop(a.last(), b, b.length - 1, false);
       bCount = b.length - k;
 
       for (p = b.base + b.length - 1; p !== b.base + k - 1; p--) {
@@ -389,8 +391,8 @@ TimSort.prototype.finishMergeHi = function (a, b, dest) {
 TimSort.prototype.minrun = function (n) {
   var r = 0;    // becomes 1 if any 1 bits are shifted off
   while (n >= 64) {
-      r |= n & 1;
-      n >>= 1;
+    r |= n & 1;
+    n >>= 1;
   }
   return n + r;
 };
@@ -425,13 +427,13 @@ ListSlice.prototype.set = function (index, value) {
 
 ListSlice.prototype.popleft = function () {
   var result = this.list[this.base];
-  this.base += 1;
-  this.length -= 1;
+  this.base++;
+  this.length--;
   return result;
 };
 
 ListSlice.prototype.popright = function () {
-  this.length -= 1;
+  this.length--;
   return this.list[this.base + this.length];
 };
 
